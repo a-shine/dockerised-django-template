@@ -1,0 +1,64 @@
+version: "3"
+
+volumes:
+  db_data_main:
+
+services:
+  db_main:
+    build:
+      context: .
+      dockerfile: docker/dev/db/Dockerfile
+    restart: on-failure
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data_main:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - MYSQL_DATABASE=dev_db
+      - MYSQL_USER=dev_db_user
+      - MYSQL_PASSWORD=devpass
+    command: --default-authentication-plugin=mysql_native_password
+  broker:
+    build:
+      context: .
+      dockerfile: docker/dev/broker/Dockerfile
+    restart: on-failure
+    ports:
+      - "6379:6379"
+  worker:
+    build:
+      context: .
+      dockerfile: docker/dev/webapp/Dockerfile
+    restart: on-failure
+    volumes:
+      - ./webapp:/webapp
+    depends_on:
+      - db_main
+      - broker
+    command: celery worker -A webapp
+  scheduled_worker:
+    build:
+      context: .
+      dockerfile: docker/dev/webapp/Dockerfile
+    restart: on-failure
+    volumes:
+      - ./webapp:/webapp
+    depends_on:
+      - db_main
+      - broker
+    command: celery -A webapp beat
+  webapp:
+    build:
+      context: .
+      dockerfile: docker/dev/webapp/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./webapp:/home/dev_user/webapp
+    depends_on:
+      - db_main
+      - broker
+      - worker
+      - scheduled_worker
+    command: bash -c "python manage.py runserver 0.0.0.0:8000"
