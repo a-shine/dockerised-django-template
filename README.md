@@ -1,2 +1,1 @@
-# dockerised-django-template
-Template for a containerised webapp using Docker (for containerisation) and Django (as the webapp framework).
+# Template for a Dockerised Django project
