@@ -1,6 +1,9 @@
 # Production Django settings
 /webapp/webapp/settings/prod.py
 
+# Django debug logs
+/webapp/webapp/logs/debug.log
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
