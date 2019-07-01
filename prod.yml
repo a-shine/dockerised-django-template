@@ -61,7 +61,6 @@ services:
       - ./webapp:/home/[USER]/webapp
     depends_on:
       - db_main
-      - db_panel
       - broker
       - worker
       - scheduled_worker
@@ -76,7 +75,6 @@ services:
       - ./webapp/static:/static
     depends_on:
       - db_main
-      - db_panel
       - broker
       - worker
       - scheduled_worker
