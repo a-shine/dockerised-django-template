@@ -1,3 +1,3 @@
-./webapp/celerybeat-schedule
-./webapp/celerybeat.pid
+/webapp/celerybeat-schedule
+/webapp/celerybeat.pid
 **/__pycache__/
