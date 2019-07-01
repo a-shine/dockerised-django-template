@@ -1,0 +1,83 @@
+version: "3"
+
+volumes:
+  db_data_main:
+  db_data_panel:
+
+services:
+  db_main:
+    build:
+      context: .
+      dockerfile: docker/prod/db/Dockerfile
+    restart: on-failure
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data_main:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=[SECURE PASSWORD]
+      - MYSQL_DATABASE=[DATABASE NAME]
+      - MYSQL_USER=[USER]
+      - MYSQL_PASSWORD=[SECURE PASSWORD]
+    command: --default-authentication-plugin=mysql_native_password
+  broker:
+    build:
+      context: .
+      dockerfile: docker/prod/broker/Dockerfile
+    restart: on-failure
+    ports:
+      - "6379:6379"
+  worker:
+    build:
+      context: .
+      dockerfile: docker/prod/webapp/Dockerfile
+    restart: on-failure
+    volumes:
+      - ./webapp:/webapp
+    depends_on:
+      - db_main
+      - broker
+    command: celery worker -A webapp
+  scheduled_worker:
+    build:
+      context: .
+      dockerfile: docker/prod/webapp/Dockerfile
+    restart: on-failure
+    volumes:
+      - ./webapp:/webapp
+    depends_on:
+      - db_main
+      - broker
+    command: celery -A webapp beat
+  webapp:
+    build:
+      context: .
+      dockerfile: docker/prod/webapp/Dockerfile
+    environment:
+      - DJANGO_SETTINGS_MODULE=webapp.settings.prod
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./webapp:/home/[USER]/webapp
+    depends_on:
+      - db_main
+      - db_panel
+      - broker
+      - worker
+      - scheduled_worker
+    command: bash -c "python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --noinput && gunicorn -w 4 webapp.wsgi -b 0.0.0.0:8000"
+  webserver:
+    build:
+      context: .
+      dockerfile: docker/prod/webserver/Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - ./webapp/static:/static
+    depends_on:
+      - db_main
+      - db_panel
+      - broker
+      - worker
+      - scheduled_worker
+      - webapp
